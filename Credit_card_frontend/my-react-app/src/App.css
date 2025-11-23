@@ -1,0 +1,35 @@
+#app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.brand .logo { width: 48px; height: 48px; border-radius: 8px; background: linear-gradient(135deg,var(--brand),var(--brand-600)); box-shadow: 0 6px 18px rgba(79,70,229,0.12); }
+.brand h2 { font-size: 1.25rem; margin:0; color:var(--text); }
+
+.nav-actions { display:flex; gap:0.5rem; align-items:center; }
+.nav-actions .btn { padding: 0.5rem 0.9rem; }
+
+.main { margin-top: 1rem; display: grid; grid-template-columns: 1fr 360px; gap: 1rem; align-items:start; }
+
+.main .content { grid-column: 1 / 2; }
+.main .aside { grid-column: 2 / 3; }
+
+.surface-section { margin-bottom: 1.25rem; }
+
+.table-card { overflow-x:auto; }
+
+.card-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 1rem; }
+
+footer.app-footer { margin-top: 2rem; color: var(--muted); font-size: 0.9rem; text-align:center; }
+
+/* Small screens: stack */
+@media (max-width: 880px) {
+  .main { grid-template-columns: 1fr; }
+  .nav-actions { display: none; }
+}

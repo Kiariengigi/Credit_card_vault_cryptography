@@ -22,7 +22,7 @@ app.config.update({
 # Configure CORS
 CORS(app, 
      supports_credentials=True,
-     origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
+     origins=["https://credit-card-vault-cryptography-1.onrender.com", "https://credit-card-vault-cryptography.onrender.com"],
      allow_headers=["Content-Type", "Authorization"],
      expose_headers=["Content-Type"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])

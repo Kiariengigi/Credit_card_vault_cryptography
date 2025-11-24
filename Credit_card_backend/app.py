@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, session, jsonify
 from auth import auth_bp, hash_password
 from merchants import merchants_bp
@@ -11,7 +12,6 @@ from db import get_db
 from config import SECRET_KEY
 
 app = Flask(__name__)
-# Use secret from config so session cookies persist across restarts during dev
 app.secret_key = SECRET_KEY
 app.config.update({
     'SESSION_COOKIE_SAMESITE': 'Lax',
@@ -19,16 +19,15 @@ app.config.update({
     'SESSION_COOKIE_SECURE': False
 })
 
-# Configure CORS to allow credentials and multiple ports during development
+# Configure CORS
 CORS(app, 
      supports_credentials=True,
-     origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175"],
+     origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
      allow_headers=["Content-Type", "Authorization"],
      expose_headers=["Content-Type"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
-
-# register blueprints
+# Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(merchants_bp)
 app.register_blueprint(customers_bp)
@@ -52,7 +51,6 @@ def login():
     try:
         db, cur = get_db()
         hashed = hash_password(password)
-        
         cur.execute(
             "SELECT user_id, user_role, status FROM users WHERE username = %s AND password_hash = %s",
             (username, hashed)
@@ -67,7 +65,6 @@ def login():
         if status != "Active":
             return jsonify({"error": "Account is inactive or suspended"}), 403
         
-        # Store user info in session
         session['user_id'] = user_id
         session['user_role'] = role
         session['username'] = username
@@ -83,7 +80,6 @@ def logout():
 
 @app.get('/session/check')
 def check_session():
-    """Check if user is logged in and return session info"""
     if 'user_id' in session:
         return jsonify({
             "logged_in": True,
@@ -93,13 +89,8 @@ def check_session():
         }), 200
     return jsonify({"logged_in": False}), 401
 
-@app.before_request
-def before_request():
-    db, cur = get_db()
-
 @app.after_request
 def after_request(response):
-    """Add CORS headers to every response"""
     origin = request.headers.get('Origin')
     if origin and any(origin.startswith(allowed) for allowed in ["http://localhost", "http://127.0.0.1"]):
         response.headers['Access-Control-Allow-Origin'] = origin
@@ -113,5 +104,7 @@ def close_db(error):
     from db import close_db as close_db_func
     close_db_func(error)
 
+# ONLY run when executing locally
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

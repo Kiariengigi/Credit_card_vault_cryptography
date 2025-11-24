@@ -2,6 +2,8 @@ import mysql.connector
 from flask import g 
 from config import DB_CONFIG
 
+
+
 def get_db():
     if 'db' not in g:
         g.db = mysql.connector.connect(**DB_CONFIG, autocommit=False)

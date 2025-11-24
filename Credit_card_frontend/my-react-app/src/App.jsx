@@ -11,11 +11,13 @@ function App() {
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const API_URL = "https://credit-card-vault-cryptography.onrender.com"
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const customerRes = await fetch("http://localhost:5000/customer/list", { credentials: "include" });
+      const customerRes = await fetch(`${API_URL}/customer/list`, { credentials: "include" });
       if (customerRes.ok) {
         const data = await customerRes.json();
         setCustomers(data.customers || []);
@@ -24,7 +26,7 @@ function App() {
         return;
       }
 
-      const merchantRes = await fetch("http://localhost:5000/merchant/list", { credentials: "include" });
+      const merchantRes = await fetch(`${API_URL}/merchant/list`, { credentials: "include" });
       if (merchantRes.ok) {
         const data = await merchantRes.json();
         setMerchants(data.merchants || []);
@@ -33,7 +35,7 @@ function App() {
         return;
       }
 
-      const cardRes = await fetch("http://localhost:5000/card/list", { credentials: "include" });
+      const cardRes = await fetch(`${API_URL}/card/list`, { credentials: "include" });
       if (cardRes.ok) {
         const data = await cardRes.json();
         setCards(data.cards || []);
@@ -64,7 +66,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/logout", { 
+      await fetch(`${API_URL}/logout`, { 
         method: "POST",
         credentials: "include" 
       });

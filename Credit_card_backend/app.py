@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, request, session, jsonify
 from auth import auth_bp, hash_password
 from merchants import merchants_bp
@@ -41,37 +42,71 @@ def home():
 
 @app.post('/login')
 def login():
+    start = time.time()
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    
+    username = data.get('username') if data else None
+    password = data.get('password') if data else None
+
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 400
-    
+
     try:
+        t_connect_start = time.time()
         db, cur = get_db()
+        t_connect_end = time.time()
+
+        t_query_start = time.time()
         hashed = hash_password(password)
         cur.execute(
             "SELECT user_id, user_role, status FROM users WHERE username = %s AND password_hash = %s",
             (username, hashed)
         )
         user = cur.fetchone()
-        
+        t_query_end = time.time()
+
         if not user:
-            return jsonify({"error": "Invalid username or password"}), 401
-        
+            total = time.time() - start
+            print(f"[LOGIN] failed auth for {username} — total={total:.3f}s, connect={(t_connect_end-t_connect_start):.3f}s, query={(t_query_end-t_query_start):.3f}s")
+            resp = jsonify({"error": "Invalid username or password", "timings": {
+                "total_s": total,
+                "db_connect_s": (t_connect_end - t_connect_start),
+                "db_query_s": (t_query_end - t_query_start)
+            }})
+            resp.status_code = 401
+            resp.headers['X-Debug-Timings'] = str(total)
+            return resp
+
         user_id, role, status = user
-        
+
         if status != "Active":
-            return jsonify({"error": "Account is inactive or suspended"}), 403
-        
+            total = time.time() - start
+            print(f"[LOGIN] inactive account {username} — total={total:.3f}s")
+            resp = jsonify({"error": "Account is inactive or suspended", "timings": {"total_s": total}})
+            resp.status_code = 403
+            resp.headers['X-Debug-Timings'] = str(total)
+            return resp
+
         session['user_id'] = user_id
         session['user_role'] = role
         session['username'] = username
-        
-        return jsonify({"message": "Login successful", "user_id": user_id, "role": role}), 200
+
+        total = time.time() - start
+        print(f"[LOGIN] success {username} id={user_id} role={role} — total={total:.3f}s, connect={(t_connect_end-t_connect_start):.3f}s, query={(t_query_end-t_query_start):.3f}s")
+        resp = jsonify({"message": "Login successful", "user_id": user_id, "role": role, "timings": {
+            "total_s": total,
+            "db_connect_s": (t_connect_end - t_connect_start),
+            "db_query_s": (t_query_end - t_query_start)
+        }})
+        resp.status_code = 200
+        resp.headers['X-Debug-Timings'] = str(total)
+        return resp
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        total = time.time() - start
+        print(f"[LOGIN] error for {username if username else 'unknown'} — {e} — total={total:.3f}s")
+        resp = jsonify({"error": str(e), "timings": {"total_s": total}})
+        resp.status_code = 500
+        resp.headers['X-Debug-Timings'] = str(total)
+        return resp
 
 @app.post('/logout')
 def logout():

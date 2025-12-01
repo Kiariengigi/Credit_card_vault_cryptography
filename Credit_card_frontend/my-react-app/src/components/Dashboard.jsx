@@ -11,11 +11,11 @@ function Dashboard({ user }) {
             <nav>
                 {user.role === "merchant" && <Link to="customers">Customers</Link>} {/* Merchants see customers */}
                 {user.role === "merchant" && " | "}
-                <Link to="cards">Cards</Link> {/* Both roles see cards */}
+                {user.role === "customer" && <Link to="cards">Cards</Link>} {/* Customers see cards */}
             </nav>
             <Routes>
                 {user.role === "merchant" && <Route path="customers" element={<Customers />} />} {/* Merchants see customers */}
-                <Route path="cards" element={<Cards />} /> {/* Both roles see cards */}
+                {user.role === "customer" && <Route path="cards" element={<Cards />} />} {/* Customers see cards */}
             </Routes>
         </div>
     );

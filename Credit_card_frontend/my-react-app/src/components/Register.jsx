@@ -5,6 +5,7 @@ function Register({ onLoginSuccess, setAuthView }) {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [role, setRole] = useState("customer"); // Default role is customer
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -12,7 +13,7 @@ function Register({ onLoginSuccess, setAuthView }) {
         setError("");
         setLoading(true);
         try {
-            const res = await api.post("/register", { username, email, password });
+            const res = await api.post("/register", { username, email, password, role }); // Include role in the request
             // On successful registration, automatically log the user in
             try {
                 const login = await api.post('/login', { username, password });
@@ -49,6 +50,13 @@ function Register({ onLoginSuccess, setAuthView }) {
                 <div className="form-row">
                     <label htmlFor="reg-password">Password</label>
                     <input id="reg-password" type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+                </div>
+                <div className="form-row">
+                    <label htmlFor="reg-role">Role</label>
+                    <select id="reg-role" value={role} onChange={e => setRole(e.target.value)}>
+                        <option value="customer">Customer</option>
+                        <option value="merchant">Merchant</option>
+                    </select>
                 </div>
 
                 <div style={{ display: 'flex', gap: 8 }}>

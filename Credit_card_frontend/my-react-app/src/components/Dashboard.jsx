@@ -9,14 +9,13 @@ function Dashboard({ user }) {
         <div>
             <h2>Welcome, {user.username}</h2>
             <nav>
-                <Link to="customers">Customers</Link> | 
-                <Link to="merchants">Merchants</Link> | 
-                <Link to="cards">Cards</Link>
+                {user.role === "merchant" && <Link to="customers">Customers</Link>} {/* Merchants see customers */}
+                {user.role === "merchant" && " | "}
+                <Link to="cards">Cards</Link> {/* Both roles see cards */}
             </nav>
             <Routes>
-                <Route path="customers" element={<Customers />} />
-                <Route path="merchants" element={<Merchants />} />
-                <Route path="cards" element={<Cards />} />
+                {user.role === "merchant" && <Route path="customers" element={<Customers />} />} {/* Merchants see customers */}
+                <Route path="cards" element={<Cards />} /> {/* Both roles see cards */}
             </Routes>
         </div>
     );

@@ -13,14 +13,14 @@ if database_url:
     DB_USER = parsed.username
     DB_PASS = parsed.password
     DB_NAME = parsed.path.lstrip('/') if parsed.path else os.getenv('DB_NAME', 'credit_card_vault')
-    DB_PORT = parsed.port or int(os.getenv('DB_PORT', 3306))
+    DB_PORT = parsed.port or int(os.getenv('DB_PORT', 35204))
 else:
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_USER = os.getenv('DB_USER', 'root')
     DB_PASS = os.getenv('DB_PASS', '')
     DB_NAME = os.getenv('DB_NAME', 'credit_card_vault')
     # Use DB_PORT (not generic PORT used by web server)
-    DB_PORT = int(os.getenv('DB_PORT', 3306))
+    DB_PORT = int(os.getenv('DB_PORT', 35204))
 
 # Optional SSL CA path (if your DB requires TLS)
 DB_SSL_CA = os.getenv('DB_SSL_CA')

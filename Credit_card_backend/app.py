@@ -14,6 +14,10 @@ from config import SECRET_KEY, SAFE_DB_INFO
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
+# Print DB config at startup (non-secret info for diagnostics)
+print(f"[STARTUP] Backend starting with DB config: {SAFE_DB_INFO}")
+
 app.config.update({
     'SESSION_COOKIE_SAMESITE': 'Lax',
     'SESSION_COOKIE_HTTPONLY': True,

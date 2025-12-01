@@ -23,3 +23,36 @@ def register_user(username, email, password, role='customer'):
         print("Error: ", e)
 
 auth_bp = Blueprint('auth', __name__)
+
+
+from flask import request, jsonify
+
+
+@auth_bp.route('/register', methods=['POST'])
+def register_route():
+    data = request.json or {}
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    role = data.get('role', 'Customer')
+
+    if not username or not email or not password:
+        return jsonify({'error': 'username, email and password are required'}), 400
+
+    try:
+        db, cur = get_db()
+        # check if username or email already exists
+        cur.execute("SELECT user_id FROM users WHERE username = %s OR email = %s", (username, email))
+        if cur.fetchone():
+            return jsonify({'error': 'username or email already exists'}), 409
+
+        hashed = hash_password(password)
+        cur.execute(
+            "INSERT INTO users (username, email, password_hash, user_role, status) VALUES (%s,%s,%s,%s,%s)",
+            (username, email, hashed, role, 'Active')
+        )
+        db.commit()
+        return jsonify({'message': 'User registered successfully'}), 201
+    except Exception as e:
+        print(f"[REGISTER] error: {e}")
+        return jsonify({'error': str(e)}), 500

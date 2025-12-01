@@ -10,7 +10,7 @@ from audit import audit_bp
 from flask_cors import CORS
 from db import get_db
 
-from config import SECRET_KEY
+from config import SECRET_KEY, SAFE_DB_INFO
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -39,6 +39,21 @@ app.register_blueprint(audit_bp)
 @app.route('/')
 def home():
     return {"message": "Vault backend running"}
+
+
+@app.route('/dbtest')
+def dbtest():
+    """Attempt a short DB connect and return diagnostic info."""
+    try:
+        # use the DB connect timeout from env (db.get_db already uses DB_CONNECT_TIMEOUT)
+        db, cur = get_db()
+        cur.execute("SELECT 1")
+        _ = cur.fetchone()
+        return {"db": "ok", "db_info": SAFE_DB_INFO}, 200
+    except Exception as e:
+        # Return a short error message and log full exception server-side
+        print(f"[DBTEST] error connecting to DB: {e}")
+        return {"db": "error", "error": str(e), "db_info": SAFE_DB_INFO}, 500
 
 @app.post('/login')
 def login():

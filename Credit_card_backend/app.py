@@ -19,15 +19,30 @@ app.secret_key = SECRET_KEY
 print(f"[STARTUP] Backend starting with DB config: {SAFE_DB_INFO}")
 
 app.config.update({
-    'SESSION_COOKIE_SAMESITE': 'Lax',
+    'SESSION_COOKIE_SAMESITE': 'None',
     'SESSION_COOKIE_HTTPONLY': True,
-    'SESSION_COOKIE_SECURE': False
+    'SESSION_COOKIE_SECURE': True
 })
 
 # Configure CORS
+# Get allowed origins from env (comma-separated), fall back to hardcoded dev/deployed URLs
+allowed_origins_str = os.getenv('ALLOWED_ORIGINS', '')
+if allowed_origins_str:
+    allowed_origins = [o.strip() for o in allowed_origins_str.split(',')]
+else:
+    # Fallback for local dev and known Render deployments
+    allowed_origins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
+    ]
+
 CORS(app, 
      supports_credentials=True,
-     origins=["https://credit-card-vault-cryptography-1.onrender.com", "https://credit-card-vault-cryptography.onrender.com"],
+     origins=allowed_origins,
      allow_headers=["Content-Type", "Authorization"],
      expose_headers=["Content-Type"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])

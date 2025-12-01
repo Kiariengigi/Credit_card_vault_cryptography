@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import api from "../api/api";
 
-function Register({ onLoginSuccess }) {
+function Register({ onLoginSuccess, setAuthView }) {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -54,6 +54,10 @@ function Register({ onLoginSuccess }) {
                 <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn" onClick={handleRegister} disabled={loading}>{loading ? 'Creating…' : 'Create account'}</button>
                     <button type="button" className="btn secondary" onClick={() => { setUsername(''); setEmail(''); setPassword(''); }}>{'Clear'}</button>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                    <span>Already have an account? </span>
+                    <button type="button" className="btn link" onClick={() => setAuthView && setAuthView('login')}>Sign in</button>
                 </div>
             </main>
         </div>

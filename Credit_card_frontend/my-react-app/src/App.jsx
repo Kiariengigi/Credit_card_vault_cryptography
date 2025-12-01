@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Login from "./components/Login";
+import Register from "./components/Register";
 import CardVault from "./components/CardVault";
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authView, setAuthView] = useState('login'); // 'login' or 'register'
 
   const API_URL = "https://credit-card-vault-cryptography.onrender.com"
 
@@ -89,7 +91,11 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <Login onLoginSuccess={() => setIsLoggedIn(true)} />;
+    return authView === 'login' ? (
+      <Login onLoginSuccess={() => setIsLoggedIn(true)} setAuthView={setAuthView} />
+    ) : (
+      <Register onLoginSuccess={() => setIsLoggedIn(true)} setAuthView={setAuthView} />
+    );
   }
 
   if (error) {

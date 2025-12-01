@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import api from "../api/api";
 
-function Login({ onLoginSuccess }) {
+function Login({ onLoginSuccess, setAuthView }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -14,11 +14,11 @@ function Login({ onLoginSuccess }) {
         try {
             const res = await api.post("/login", { username, password });
             console.log("Login response:", res.data);
-            
+
             // Verify session was established
             const sessionCheck = await api.get("/session/check");
             console.log("Session check after login:", sessionCheck.data);
-            
+
             if (onLoginSuccess) onLoginSuccess(res.data);
         } catch (err) {
             console.error("Login error:", err);
@@ -45,11 +45,16 @@ function Login({ onLoginSuccess }) {
                         <input id="password" name="password" type="password" aria-required="true" value={password} onChange={e => setPassword(e.target.value)} />
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8 }}> 
+                    <div style={{ display: 'flex', gap: 8 }}>
                         <button className="btn" type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
                         <button type="button" className="btn secondary" onClick={() => { setUsername(''); setPassword(''); }}>{'Clear'}</button>
                     </div>
                 </form>
+
+                <div style={{ marginTop: 12 }}>
+                    <span>Don't have an account? </span>
+                    <button type="button" className="btn link" onClick={() => setAuthView && setAuthView('register')}>Create account</button>
+                </div>
             </main>
         </div>
     );

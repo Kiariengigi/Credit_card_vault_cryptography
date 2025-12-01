@@ -34,21 +34,24 @@ def register_route():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role', 'Customer')
+    role = data.get('role', 'customer').lower()
 
     if not username or not email or not password:
-        return jsonify({'error': 'username, email and password are required'}), 400
+        return jsonify({'error': 'username, email, and password are required'}), 400
+
+    if role not in ['customer', 'merchant']:
+        return jsonify({'error': 'Invalid role. Only "customer" or "merchant" roles are allowed.'}), 400
 
     try:
         db, cur = get_db()
-        # check if username or email already exists
+        # Check if username or email already exists
         cur.execute("SELECT user_id FROM users WHERE username = %s OR email = %s", (username, email))
         if cur.fetchone():
             return jsonify({'error': 'username or email already exists'}), 409
 
         hashed = hash_password(password)
         cur.execute(
-            "INSERT INTO users (username, email, password_hash, user_role, status) VALUES (%s,%s,%s,%s,%s)",
+            "INSERT INTO users (username, email, password_hash, user_role, status) VALUES (%s, %s, %s, %s, %s)",
             (username, email, hashed, role, 'Active')
         )
         db.commit()

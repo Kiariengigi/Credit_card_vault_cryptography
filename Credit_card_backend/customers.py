@@ -106,3 +106,39 @@ def list_customers():
                     c[k] = v.hex()
 
     return jsonify({'customers': customers})
+
+@customers_bp.get('/customer/my_cards')
+@require_role('customer')
+def get_my_cards():
+    """Retrieve card details for the logged-in customer."""
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({"error": "Unauthorized access."}), 401
+
+        db, cur = get_db()
+        cur.execute(
+            """
+            SELECT card_id, AES_DECRYPT(card_number_enc, %s) AS card_number,
+                   AES_DECRYPT(expiry_date_enc, %s) AS expiry_date,
+                   AES_DECRYPT(cvv_enc, %s) AS cvv
+            FROM card_vault
+            WHERE customer_id = %s AND status = 'Active'
+            """,
+            (AES_KEY, AES_KEY, AES_KEY, user_id)
+        )
+        rows = cur.fetchall()
+        cards = [dict(zip([desc[0] for desc in cur.description], r)) for r in rows]
+
+        # Decode binary fields returned from AES_DECRYPT
+        for card in cards:
+            for k, v in list(card.items()):
+                if isinstance(v, (bytes, bytearray)):
+                    try:
+                        card[k] = v.decode('utf-8')
+                    except Exception:
+                        card[k] = v.hex()
+
+        return jsonify({'cards': cards})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

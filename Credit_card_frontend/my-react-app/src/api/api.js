@@ -1,9 +1,12 @@
 import axios from "axios";
 
-const API_URL = "https://credit-card-vault-cryptography.onrender.com"
+// Prefer a local backend during development. Falls back to the deployed URL otherwise.
+const DEFAULT_REMOTE = "https://credit-card-vault-cryptography.onrender.com";
+const API_URL = process.env.REACT_APP_API_URL || ((window && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) ? 'http://localhost:5000' : DEFAULT_REMOTE);
+
 const api = axios.create({
-    baseURL: `${API_URL}`, // Flask backend URL
-    withCredentials: true
+    baseURL: API_URL,
+    withCredentials: true,
 });
 
 export default api;

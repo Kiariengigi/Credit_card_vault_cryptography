@@ -17,6 +17,8 @@ function Register({ onLoginSuccess, setAuthView }) {
             // On successful registration, automatically log the user in
             try {
                 const login = await api.post('/login', { username, password });
+                // Save role in local storage
+                localStorage.setItem("userRole", role);
                 // confirm session
                 await api.get('/session/check');
                 if (onLoginSuccess) onLoginSuccess(login.data);

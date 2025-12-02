@@ -9,7 +9,7 @@ function Dashboard({ user }) {
     useEffect(() => {
         // Fetch role from local storage
         const storedRole = localStorage.getItem("userRole");
-        console.log("userRole")
+        console.log(storedRole)
         setRole(storedRole);
     }, []);
 
@@ -17,13 +17,13 @@ function Dashboard({ user }) {
         <div>
             <h2>Welcome, {user.username}</h2>
             <nav>
-                {role === "Merchant" && <Link to="customers">Customers</Link>} {/* Merchants see customers */}
-                {role === "Merchant" && " | "}
-                {role === "Customer" && <Link to="cards">Cards</Link>} {/* Customers see cards */}
+                {storedRole === "Merchant" && <Link to="customers">Customers</Link>} {/* Merchants see customers */}
+                {storedRole === "Merchant" && " | "}
+                {storedRole === "Customer" && <Link to="cards">Cards</Link>} {/* Customers see cards */}
             </nav>
             <Routes>
-                {role === "Merchant" && <Route path="customers" element={<Customers />} />} {/* Merchants see customers */}
-                {role === "Customer" && <Route path="cards" element={<Cards />} />} {/* Customers see cards */}
+                {storedRole === "Merchant" && <Route path="customers" element={<Customers />} />} {/* Merchants see customers */}
+                {storedRole === "Customer" && <Route path="cards" element={<Cards />} />} {/* Customers see cards */}
             </Routes>
         </div>
     );

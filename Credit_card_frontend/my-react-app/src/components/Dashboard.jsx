@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import Customers from "./Customers";
-import Merchants from "./Merchants";
 import Cards from "./Cards";
 
 function Dashboard({ user }) {

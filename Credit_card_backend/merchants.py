@@ -17,7 +17,7 @@ def create_merchant():
     return {"message": "merchant created"}
 
 @merchants_bp.get('/merchant/list')
-@require_role('admin','merchant')
+@require_role('admin')
 def list_merchants():
     db, cur = get_db()
     cur.execute("SELECT merchant_id, merchant_name AS business_name, contact_email FROM merchants WHERE status='Active'")

@@ -15,6 +15,10 @@ function Login({ onLoginSuccess, setAuthView }) {
             const res = await api.post("/login", { username, password });
             console.log("Login response:", res.data);
 
+            // Save user role in local storage
+            localStorage.setItem("userRole", res.data.role);
+            console.log(localStorage.getItem("userRole"))
+
             // Verify session was established
             const sessionCheck = await api.get("/session/check");
             console.log("Session check after login:", sessionCheck.data);

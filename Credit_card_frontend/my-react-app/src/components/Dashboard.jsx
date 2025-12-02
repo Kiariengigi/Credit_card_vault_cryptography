@@ -9,6 +9,7 @@ function Dashboard({ user }) {
     useEffect(() => {
         // Fetch role from local storage
         const storedRole = localStorage.getItem("userRole");
+        console.log("userRole")
         setRole(storedRole);
     }, []);
 

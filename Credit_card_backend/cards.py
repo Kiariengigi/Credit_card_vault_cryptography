@@ -49,7 +49,12 @@ def store_card():
         )
         db.commit()
         
-        audit_log(session['user_id'], "STORE_CARD", "card_vault", record_id=d['customer_id'])
+        # FIX: Changed "STORE_CARD" to "INSERT" to avoid "Data truncated" error if DB column is small or ENUM
+        try:
+            audit_log(session['user_id'], "INSERT", "card_vault", record_id=d['customer_id'])
+        except Exception as e:
+            print(f"Audit log failed (non-fatal): {e}")
+
         return jsonify({"message": "Card stored successfully"}), 201
 
     except Exception as e:

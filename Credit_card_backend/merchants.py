@@ -2,6 +2,7 @@ from flask import Blueprint, request, session, jsonify
 from db import get_db
 from utils.decorators import require_role
 from utils.logger import audit_log
+from config import AES_KEY
 
 merchants_bp = Blueprint('merchants', __name__)
 
@@ -60,5 +61,41 @@ def get_merchant_customers():
                         customer[k] = v.hex()
 
         return jsonify({'customers': customers})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@merchants_bp.get('/admin/all_data')
+@require_role('admin')
+def get_admin_all_data():
+    """Retrieve all merchants, their customers, and card details for admin."""
+    try:
+        db, cur = get_db()
+        cur.execute(
+            """
+            SELECT m.merchant_id, m.merchant_name AS business_name, m.contact_email,
+                   c.customer_id, c.first_name AS firstname, c.last_name AS lastname,
+                   AES_DECRYPT(c.email_enc, %s) AS email, AES_DECRYPT(c.phone_enc, %s) AS phone,
+                   cv.card_id, AES_DECRYPT(cv.card_number_enc, %s) AS card_number,
+                   AES_DECRYPT(cv.expiry_date_enc, %s) AS expiry_date, AES_DECRYPT(cv.cvv_enc, %s) AS cvv
+            FROM merchants m
+            LEFT JOIN customers c ON m.merchant_id = c.merchant_id AND c.status = 'Active'
+            LEFT JOIN card_vault cv ON c.customer_id = cv.customer_id AND cv.status = 'Active'
+            WHERE m.status = 'Active'
+            """,
+            (AES_KEY, AES_KEY, AES_KEY, AES_KEY, AES_KEY)
+        )
+        rows = cur.fetchall()
+        data = [dict(zip([desc[0] for desc in cur.description], r)) for r in rows]
+
+        # Decode binary fields returned from AES_DECRYPT
+        for item in data:
+            for k, v in list(item.items()):
+                if isinstance(v, (bytes, bytearray)):
+                    try:
+                        item[k] = v.decode('utf-8')
+                    except Exception:
+                        item[k] = v.hex()
+
+        return jsonify({'data': data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

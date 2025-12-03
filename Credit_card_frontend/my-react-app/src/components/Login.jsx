@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 function Login({ onLoginSuccess, setAuthView }) {
+    const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -23,7 +25,10 @@ function Login({ onLoginSuccess, setAuthView }) {
             const sessionCheck = await api.get("/session/check");
             console.log("Session check after login:", sessionCheck.data);
 
-            if (onLoginSuccess) onLoginSuccess(res.data);
+            setTimeout(() => {
+                if (onLoginSuccess) onLoginSuccess(res.data);
+                navigate('/dashboard');
+            }, 50);
         } catch (err) {
             console.error("Login error:", err);
             setError(err.response?.data?.error || "Login failed");

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import api from "../api/api";
 
-function CardVault() {
+function CardVault({ user }) {
+  const [currentUser, setCurrentUser] = useState(user || JSON.parse(localStorage.getItem("userData")));
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [formData, setFormData] = useState({
     cardholderName: "",
     cardNumber: "",
@@ -15,87 +15,62 @@ function CardVault() {
     cvv: "",
   });
 
-  const [currentUser, setCurrentUser] = useState(null);
+  // Helper to get the ID regardless of what the backend calls it
+  const getUserId = (u) => u?.customer_id || u?.user_id;
 
   useEffect(() => {
-  const storedUser = localStorage.getItem("userData");
-  if (storedUser) {
-    const user = JSON.parse(storedUser);
-    setCurrentUser(user);
-    fetchCards(user.customer_id); // fetch cards for this user
-  }
-}, []);
+    const activeUser = user || JSON.parse(localStorage.getItem("userData"));
+    setCurrentUser(activeUser);
 
+    const id = getUserId(activeUser);
 
-const fetchCards = async (customerId) => {
-  try {
+    if (id) {
+      fetchCards(id);
+    } else {
+      console.warn("No valid ID found in user object:", activeUser);
+    }
+  }, [user]);
+
+  const fetchCards = async (customerId) => {
     if (!customerId) return;
-    const res = await api.get(`/card/list/${customerId}`, { withCredentials: true });
-    setCards(res.data.cards || []);
-  } catch (err) {
-    console.error("Failed to fetch cards:", err);
-  }
-};
-
-
-
-  const validateCardNumber = (num) => /^\d{13,19}$/.test(num.replace(/\s/g, ""));
-  const validateExpiry = (exp) => {
-    const regex = /^(0[1-9]|1[0-2])\/\d{2}$/;
-    if (!regex.test(exp)) return false;
-    const [month, year] = exp.split("/");
-    const currentYear = new Date().getFullYear() % 100;
-    const currentMonth = new Date().getMonth() + 1;
-    const expYear = parseInt(year);
-    if (expYear < currentYear) return false;
-    if (expYear === currentYear && parseInt(month) < currentMonth) return false;
-    return true;
+    try {
+      const res = await api.get(`/card/${customerId}`, { withCredentials: true });
+      setCards(res.data.cards || []);
+    } catch (err) {
+      console.error("Failed to fetch cards:", err);
+    }
   };
-  const validateCVV = (cvv) => /^\d{3,4}$/.test(cvv);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!formData.cardholderName.trim()) {
-      setError("Cardholder name is required");
-      return;
-    }
-    if (!validateCardNumber(formData.cardNumber)) {
-      setError("Invalid card number (13-19 digits)");
-      return;
-    }
-    if (!validateExpiry(formData.expiryDate)) {
-      setError("Invalid expiry date (MM/YY) or card expired");
-      return;
-    }
-    if (!validateCVV(formData.cvv)) {
-      setError("Invalid CVV (3-4 digits)");
-      return;
-    }
-    if (!currentUser) {
-      setError("No logged-in user found");
-      return;
+    if (!formData.cardholderName.trim()) return setError("Cardholder name required");
+    if (!/^\d{13,19}$/.test(formData.cardNumber.replace(/\s/g, ""))) return setError("Invalid card number");
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.expiryDate)) return setError("Invalid expiry date");
+    if (!/^\d{3,4}$/.test(formData.cvv)) return setError("Invalid CVV");
+
+    const id = getUserId(currentUser);
+
+    if (!id) {
+        return setError("No logged-in user ID found. Please re-login.");
     }
 
     setLoading(true);
     try {
-      await api.post(
-        "/card/store",
-        {
-          customer_id: currentUser.customer_id, // use logged-in customer
-          card: formData.cardNumber.replace(/\s/g, ""),
-          exp: formData.expiryDate,
-          cvv: formData.cvv,
-        },
-        { withCredentials: true }
-      );
+      // We send the ID as 'customer_id' to the backend, because that's likely what the API expects in the body
+      await api.post("/card/store", {
+        customer_id: id, 
+        card: formData.cardNumber.replace(/\s/g, ""),
+        exp: formData.expiryDate,
+        cvv: formData.cvv,
+      }, { withCredentials: true });
 
       setSuccess("Card stored successfully!");
       setFormData({ cardholderName: "", cardNumber: "", expiryDate: "", cvv: "" });
       setShowForm(false);
-      fetchCards();
+      fetchCards(id);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to store card");
     } finally {
@@ -107,8 +82,7 @@ const fetchCards = async (customerId) => {
     const { name, value } = e.target;
     if (name === "cardNumber") {
       const cleaned = value.replace(/\D/g, "").slice(0, 19);
-      const formatted = cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
-      setFormData({ ...formData, [name]: formatted });
+      setFormData({ ...formData, [name]: cleaned.replace(/(\d{4})(?=\d)/g, "$1 ") });
     } else if (name === "expiryDate") {
       const cleaned = value.replace(/\D/g, "").slice(0, 4);
       const formatted = cleaned.length > 2 ? `${cleaned.slice(0, 2)}/${cleaned.slice(2)}` : cleaned;
@@ -120,47 +94,45 @@ const fetchCards = async (customerId) => {
     }
   };
 
-  const maskCardNumber = (cardNum) => {
-    if (!cardNum) return "";
-    const last4 = cardNum.slice(-4);
-    return `**** **** **** ${last4}`;
-  };
+  const maskCardNumber = (cardNum) => cardNum ? `**** **** **** ${cardNum.slice(-4)}` : "";
 
   return (
     <div className="app-container">
       <main role="main">
         <h2>Card Vault</h2>
+        {error && <div style={{ borderLeft: "4px solid red", marginBottom: 12, padding: 10, background: "#fff0f0" }}>{error}</div>}
+        {success && <div style={{ borderLeft: "4px solid green", marginBottom: 12, padding: 10, background: "#f0fff0" }}>{success}</div>}
 
-        {error && <div className="surface" style={{ borderLeft: '4px solid var(--danger)', marginBottom: 12 }}>{error}</div>}
-        {success && <div className="surface" style={{ borderLeft: '4px solid var(--accent)', marginBottom: 12 }}>{success}</div>}
-
-        {!showForm ? (
+        {!showForm && (
           <button className="btn" onClick={() => setShowForm(true)}>+ Store New Card</button>
-        ) : (
+        )}
+
+        {showForm && (
           <section className="surface" style={{ marginTop: 16 }}>
-            <h3>Store Card for {currentUser?.firstname} {currentUser?.lastname}</h3>
+            {/* Note: username/firstname might be missing in your current login response, so we add a fallback */}
+            <h3>Store Card for {currentUser?.firstname || currentUser?.username || "Customer"}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-row">
                 <label>Cardholder Name</label>
-                <input name="cardholderName" type="text" value={formData.cardholderName} onChange={handleInputChange} placeholder="John Doe" />
+                <input name="cardholderName" value={formData.cardholderName} onChange={handleInputChange} placeholder="John Doe" />
               </div>
               <div className="form-row">
                 <label>Card Number</label>
-                <input name="cardNumber" type="text" value={formData.cardNumber} onChange={handleInputChange} placeholder="1234 5678 9012 3456" maxLength="23" />
+                <input name="cardNumber" value={formData.cardNumber} onChange={handleInputChange} placeholder="1234 5678 9012 3456" maxLength="23" />
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: "flex", gap: 12 }}>
                 <div className="form-row" style={{ flex: 1 }}>
                   <label>Expiry Date</label>
-                  <input name="expiryDate" type="text" value={formData.expiryDate} onChange={handleInputChange} placeholder="MM/YY" maxLength="5" />
+                  <input name="expiryDate" value={formData.expiryDate} onChange={handleInputChange} placeholder="MM/YY" maxLength="5" />
                 </div>
                 <div className="form-row" style={{ flex: 1 }}>
                   <label>CVV</label>
                   <input name="cvv" type="password" value={formData.cvv} onChange={handleInputChange} placeholder="123" maxLength="4" />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button className="btn" type="submit" disabled={loading}>{loading ? 'Storing…' : 'Store Card'}</button>
-                <button type="button" className="btn secondary" onClick={() => setShowForm(false)}>Cancel</button>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="submit" disabled={loading}>{loading ? "Storing…" : "Store Card"}</button>
+                <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
               </div>
             </form>
           </section>
@@ -168,7 +140,9 @@ const fetchCards = async (customerId) => {
 
         <section className="surface" style={{ marginTop: 24 }}>
           <h3>Stored Cards</h3>
-          {cards.length === 0 ? <p>No cards stored yet</p> : (
+          {cards.length === 0 ? (
+            <p>No cards stored yet</p>
+          ) : (
             <table>
               <thead>
                 <tr>

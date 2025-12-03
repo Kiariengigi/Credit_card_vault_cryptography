@@ -6,16 +6,23 @@ import CardVault from "./CardVault";
 import "./Dashboard.css";
 
 function Dashboard({ user, role, onLogout }) {
-  const [currentRole, setCurrentRole] = useState(role || localStorage.getItem("userRole"));
+  const [currentUser, setCurrentUser] = useState(user || JSON.parse(localStorage.getItem("userData")));
+  const [currentRole, setCurrentRole] = useState((role || localStorage.getItem("userRole") || "").toLowerCase());
   const [adminData, setAdminData] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("userRole");
-    setCurrentRole(storedRole);
-    if (storedRole === "Admin" || storedRole === "admin") fetchAdminData();
-  }, []);
+    // Keep role in sync if prop changes
+    const storedRole = role || localStorage.getItem("userRole");
+    setCurrentRole(storedRole?.toLowerCase() || "");
+
+    // Keep user in sync if prop changes
+    const storedUser = user || JSON.parse(localStorage.getItem("userData"));
+    setCurrentUser(storedUser);
+
+    if (storedRole?.toLowerCase() === "admin") fetchAdminData();
+  }, [role, user]);
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -23,8 +30,8 @@ function Dashboard({ user, role, onLogout }) {
       const response = await fetch("/admin/all_data", { credentials: "include" });
       const result = await response.json();
       setAdminData(result.data);
-    } catch (error) {
-      console.error("Error fetching admin data:", error);
+    } catch (err) {
+      console.error("Error fetching admin data:", err);
     } finally {
       setLoading(false);
     }
@@ -43,7 +50,7 @@ function Dashboard({ user, role, onLogout }) {
         <div className="header-content">
           <h1>Dashboard</h1>
           <div className="header-right">
-            <span className="user-info">Welcome, <strong>{user?.username}</strong></span>
+            <span>Welcome, <strong>{currentUser?.username || "Guest"}</strong></span>
             <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>
         </div>
@@ -53,53 +60,51 @@ function Dashboard({ user, role, onLogout }) {
         <nav className="dashboard-nav">
           <h3>Menu</h3>
           <ul>
-            {(currentRole === "Merchant" || currentRole === "merchant") && (
+            {(currentRole === "merchant" || currentRole === "admin") && (
               <>
-                <li><Link to="customers" className="nav-link">👥 Customers</Link></li>
-                <li><Link to="vault" className="nav-link">➕ Add New Card</Link></li>
+                <li><Link to="customers">👥 Customers</Link></li>
+                <li><Link to="vault">➕ Add New Card</Link></li>
               </>
             )}
-            {(currentRole === "Customer" || currentRole === "customer") && (
+            {currentRole === "customer" && (
               <>
-                <li><Link to="cards" className="nav-link">💳 My Cards</Link></li>
-                <li><Link to="vault" className="nav-link">➕ Add New Card</Link></li>
+                <li><Link to="cards">💳 My Cards</Link></li>
+                <li><Link to="vault">➕ Add New Card</Link></li>
               </>
             )}
           </ul>
         </nav>
 
         <div className="dashboard-content">
-          {(currentRole === "Admin" || currentRole === "admin") && (
+          {currentRole === "admin" && (
             <div className="admin-section">
               <h2>System Overview</h2>
-              {loading ? <p>Loading data...</p> :
-                adminData && adminData.length > 0 ? (
-                  <div className="table-wrapper">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Merchant</th>
-                          <th>Email</th>
-                          <th>Customer Name</th>
-                          <th>Customer Email</th>
-                          <th>Card Number</th>
-                          <th>Expiry</th>
+              {loading ? <p>Loading...</p> :
+                adminData?.length > 0 ? (
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Merchant</th>
+                        <th>Email</th>
+                        <th>Customer Name</th>
+                        <th>Customer Email</th>
+                        <th>Card Number</th>
+                        <th>Expiry</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminData.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{item.business_name}</td>
+                          <td>{item.contact_email}</td>
+                          <td>{item.firstname ? `${item.firstname} ${item.lastname}` : "—"}</td>
+                          <td>{item.email || "—"}</td>
+                          <td>{item.card_number || "—"}</td>
+                          <td>{item.expiry_date || "—"}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {adminData.map((item, idx) => (
-                          <tr key={idx} className={idx % 2 === 0 ? "even" : "odd"}>
-                            <td>{item.business_name}</td>
-                            <td>{item.contact_email}</td>
-                            <td>{item.firstname ? `${item.firstname} ${item.lastname}` : "—"}</td>
-                            <td>{item.email || "—"}</td>
-                            <td>{item.card_number || "—"}</td>
-                            <td>{item.expiry_date || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 ) : <p>No data available</p>
               }
             </div>
@@ -108,7 +113,7 @@ function Dashboard({ user, role, onLogout }) {
           <Routes>
             <Route path="customers" element={<Customers />} />
             <Route path="cards" element={<Cards />} />
-            <Route path="vault" element={<CardVault />} />
+            <Route path="vault" element={<CardVault user={currentUser} />} />
             <Route path="/" element={<p>Welcome to your dashboard!</p>} />
           </Routes>
         </div>

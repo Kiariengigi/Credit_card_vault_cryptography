@@ -39,10 +39,11 @@ def store_card():
             return jsonify({"error": "User not found"}), 404
         
         # Store encrypted card details
+        # Added 'is_default' = 0 to fix the "Field 'is_default' doesn't have a default value" error
         cur.execute(
             """
-            INSERT INTO card_vault (customer_id, card_number_enc, card_holder_enc, expiry_date_enc, cvv_enc, last_four_digits, status)
-            VALUES (%s, AES_ENCRYPT(%s,%s), AES_ENCRYPT(%s,%s), AES_ENCRYPT(%s,%s), AES_ENCRYPT(%s,%s), %s, 'Active')
+            INSERT INTO card_vault (customer_id, card_number_enc, card_holder_enc, expiry_date_enc, cvv_enc, last_four_digits, status, is_default)
+            VALUES (%s, AES_ENCRYPT(%s,%s), AES_ENCRYPT(%s,%s), AES_ENCRYPT(%s,%s), AES_ENCRYPT(%s,%s), %s, 'Active', 0)
             """,
             (d['customer_id'], d['card'], AES_KEY, d.get('cardholderName','Card'), AES_KEY, d['exp'], AES_KEY, d['cvv'], AES_KEY, str(d['card'])[-4:])
         )

@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import Customers from "./Customers";
 import Cards from "./Cards";
+import CardVault from "./CardVault";
 import "./Dashboard.css";
 
 function Dashboard({ user, role, onLogout }) {
-  const [currentRole, setCurrentRole] = useState(role);
+  const [currentRole, setCurrentRole] = useState(role || localStorage.getItem("userRole"));
   const [adminData, setAdminData] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -13,20 +14,13 @@ function Dashboard({ user, role, onLogout }) {
   useEffect(() => {
     const storedRole = localStorage.getItem("userRole");
     setCurrentRole(storedRole);
-    console.log("ROLE INSIDE DASHBOARD:", storedRole);
-
-    // Fetch admin data if user is admin
-    if (storedRole === "Admin" || storedRole === "admin") {
-      fetchAdminData();
-    }
+    if (storedRole === "Admin" || storedRole === "admin") fetchAdminData();
   }, []);
 
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/admin/all_data", {
-        credentials: "include",
-      });
+      const response = await fetch("/admin/all_data", { credentials: "include" });
       const result = await response.json();
       setAdminData(result.data);
     } catch (error) {
@@ -49,12 +43,8 @@ function Dashboard({ user, role, onLogout }) {
         <div className="header-content">
           <h1>Dashboard</h1>
           <div className="header-right">
-            <span className="user-info">
-              Welcome, <strong>{user?.username}</strong>
-            </span>
-            <button className="logout-btn" onClick={handleLogout}>
-              Logout
-            </button>
+            <span className="user-info">Welcome, <strong>{user?.username}</strong></span>
+            <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>
         </div>
       </header>
@@ -64,19 +54,16 @@ function Dashboard({ user, role, onLogout }) {
           <h3>Menu</h3>
           <ul>
             {(currentRole === "Merchant" || currentRole === "merchant") && (
-              <li>
-                <Link to="customers" className="nav-link">
-                  👥 Customers
-                </Link>
-              </li>
+              <>
+                <li><Link to="customers" className="nav-link">👥 Customers</Link></li>
+                <li><Link to="vault" className="nav-link">➕ Add New Card</Link></li>
+              </>
             )}
-
             {(currentRole === "Customer" || currentRole === "customer") && (
-              <li>
-                <Link to="cards" className="nav-link">
-                  💳 My Cards
-                </Link>
-              </li>
+              <>
+                <li><Link to="cards" className="nav-link">💳 My Cards</Link></li>
+                <li><Link to="vault" className="nav-link">➕ Add New Card</Link></li>
+              </>
             )}
           </ul>
         </nav>
@@ -85,69 +72,44 @@ function Dashboard({ user, role, onLogout }) {
           {(currentRole === "Admin" || currentRole === "admin") && (
             <div className="admin-section">
               <h2>System Overview</h2>
-              {loading ? (
-                <div className="loading">
-                  <p>Loading data...</p>
-                </div>
-              ) : adminData && adminData.length > 0 ? (
-                <div className="table-wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Merchant</th>
-                        <th>Email</th>
-                        <th>Customer Name</th>
-                        <th>Customer Email</th>
-                        <th>Card Number</th>
-                        <th>Expiry</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {adminData.map((item, index) => (
-                        <tr key={index} className={index % 2 === 0 ? "even" : "odd"}>
-                          <td>
-                            <span className="badge merchant-badge">
-                              {item.business_name}
-                            </span>
-                          </td>
-                          <td>{item.contact_email}</td>
-                          <td>
-                            {item.firstname
-                              ? `${item.firstname} ${item.lastname}`
-                              : "—"}
-                          </td>
-                          <td>{item.email || "—"}</td>
-                          <td>
-                            <code className="card-number">
-                              {item.card_number || "—"}
-                            </code>
-                          </td>
-                          <td>
-                            <span className="expiry-badge">
-                              {item.expiry_date || "—"}
-                            </span>
-                          </td>
+              {loading ? <p>Loading data...</p> :
+                adminData && adminData.length > 0 ? (
+                  <div className="table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Merchant</th>
+                          <th>Email</th>
+                          <th>Customer Name</th>
+                          <th>Customer Email</th>
+                          <th>Card Number</th>
+                          <th>Expiry</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="no-data">
-                  <p>No data available</p>
-                </div>
-              )}
+                      </thead>
+                      <tbody>
+                        {adminData.map((item, idx) => (
+                          <tr key={idx} className={idx % 2 === 0 ? "even" : "odd"}>
+                            <td>{item.business_name}</td>
+                            <td>{item.contact_email}</td>
+                            <td>{item.firstname ? `${item.firstname} ${item.lastname}` : "—"}</td>
+                            <td>{item.email || "—"}</td>
+                            <td>{item.card_number || "—"}</td>
+                            <td>{item.expiry_date || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : <p>No data available</p>
+              }
             </div>
           )}
 
           <Routes>
-            {(currentRole === "Merchant" || currentRole === "merchant") && (
-              <Route path="customers" element={<Customers />} />
-            )}
-
-            {(currentRole === "Customer" || currentRole === "customer") && (
-              <Route path="cards" element={<Cards />} />
-            )}
+            <Route path="customers" element={<Customers />} />
+            <Route path="cards" element={<Cards />} />
+            <Route path="vault" element={<CardVault />} />
+            <Route path="/" element={<p>Welcome to your dashboard!</p>} />
           </Routes>
         </div>
       </div>
